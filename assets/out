@@ -29,6 +29,7 @@ registry_mirror=$(jq -r '.source.registry_mirror // ""' < $payload)
 
 username=$(jq -r '.source.username // ""' < $payload)
 password=$(jq -r '.source.password // ""' < $payload)
+ssh_private_key=$(jq -r '.source.ssh_private_key // ""' < $payload)
 repository=$(jq -r '.source.repository // ""' < $payload)
 ca_certs=$(jq -r '.source.ca_certs // []' < $payload)
 client_certs=$(jq -r '.source.client_certs // []' < $payload)
@@ -244,7 +245,17 @@ elif [ -n "$build" ]; then
     done
   fi
 
-  docker build -t "${repository}:${tag_name}" "${target[@]}" "${expanded_build_args[@]}" "${expanded_labels[@]}" -f "$dockerfile" $cache_from "$build"
+  if [ -n "$ssh_private_key" ]; then
+      eval $(ssh-agent)
+      echo "$ssh_private_key" > /tmp/private_key
+      chmod 600 /tmp/private_key
+      ssh-add /tmp/private_key
+  fi
+
+  docker build -t "${repository}:${tag_name}" --ssh default "${target[@]}" "${expanded_build_args[@]}" "${expanded_labels[@]}" -f "$dockerfile" $cache_from "$build"
+
+  eval $(ssh-agent -k)
+
 elif [ -n "$load_file" ]; then
   if [ -n "$load_repository" ]; then
     docker load -i "$load_file"

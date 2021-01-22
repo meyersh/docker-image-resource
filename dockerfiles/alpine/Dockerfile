@@ -27,6 +27,7 @@ RUN apk --no-cache add \
       docker \
       jq \
       ca-certificates \
+      openssh-client \
       xz \
       util-linux \
       tar \
@@ -45,3 +46,4 @@ RUN set -e; \
 
 # final output stage
 FROM resource
+ENV DOCKER_BUILDKIT=1
